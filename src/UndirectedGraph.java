@@ -128,7 +128,7 @@ public class UndirectedGraph implements IGraph {
         Set<UndirectedEdge> edgesSet = new HashSet<>(this.edges);
         for (UndirectedEdge edge : edgesSet) {
             if (edge.contains(vertex)) {
-                this.edges.remove(edge);
+                this.removeEdge(edge.left(),edge.right());
             }
         }
     }
@@ -177,6 +177,18 @@ public class UndirectedGraph implements IGraph {
     @Override
     public int getMC() {
         return this.modeCount;
+    }
+
+    /**
+     * Gets edge length.
+     *
+     * @param u the first vertex
+     * @param v the second vertex
+     * @return the edge length. if no edge exists return infinity.
+     */
+    @Override
+    public double getEdgeLength(int u, int v) {
+        return 1;
     }
 
     public String stringifyVertexes() {
@@ -234,14 +246,6 @@ public class UndirectedGraph implements IGraph {
                 }
             }
         }
-        /*for (INodeData v : this.vertexSet) {
-            for (INodeData u : this.vertexSet) {
-                if (this.edges.contains(new UndirectedEdge(v.getKey(), u.getKey()))) {
-                    matrix[u.getKey() + 1][v.getKey() + 1] = "t";
-                    matrix[v.getKey() + 1][u.getKey() + 1] = "t";
-                }
-            }
-        }*/
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < matrix.length; ++i) {
             for (int j = 0; j < matrix[i].length; ++j) {
@@ -262,5 +266,7 @@ public class UndirectedGraph implements IGraph {
         }
         return this.toString;
     }
+
+
 }
 

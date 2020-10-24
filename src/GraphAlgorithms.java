@@ -1,16 +1,13 @@
+import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.Queue;
-import java.util.LinkedList;
-import java.util.Collections;
+import java.util.*;
 
 
 public class GraphAlgorithms implements IGraphAlgorithms {
     private IGraph graph;
+    private Map<Integer, Integer[]> shortestPathTrees;
+    private Map<Integer, Double[]> shortestPathDistTrees;
 
     public GraphAlgorithms(IGraph g) {
         this.init(g);
@@ -24,7 +21,9 @@ public class GraphAlgorithms implements IGraphAlgorithms {
     @Override
     public void init(IGraph g) {
         this.graph = g;
-        initNodesTag(1);
+        this.initNodesTag(1);
+        this.shortestPathTrees = new HashMap<>();
+        this.shortestPathDistTrees = new HashMap<>();
     }
 
     private void initNodesTag(int state) {
@@ -65,7 +64,9 @@ public class GraphAlgorithms implements IGraphAlgorithms {
             for (INodeData u : this.graph.getV()) {
                 if (v.getKey() == u.getKey()) continue;
                 UndirectedEdge edge = new UndirectedEdge(v.getKey(), u.getKey());
-                if (connectedVertexes.contains(edge)) continue;
+                if (connectedVertexes.contains(edge)) {
+                    continue;
+                }
                 if (this.shortestPathDist(v.getKey(), u.getKey()) == -1) return false;
                 connectedVertexes.add(edge);
             }
@@ -82,8 +83,13 @@ public class GraphAlgorithms implements IGraphAlgorithms {
      */
     @Override
     public int shortestPathDist(int src, int dest) {
-        int dist = this.shortestPath(src, dest).size();
-        return (dist == 0 && src != dest) ? -1 : dist;
+        Double dist;
+        if (this.shortestPathDistTrees.containsKey(src)) {
+            dist = this.shortestPathDistTrees.get(src)[dest];
+        } else {
+            dist = (double) this.shortestPath(src, dest).size();
+        }
+        return (dist == 0.0 && src != dest) ? -1 : dist.intValue();
 
     }
 
@@ -98,16 +104,62 @@ public class GraphAlgorithms implements IGraphAlgorithms {
      */
     @Override
     public List<INodeData> shortestPath(int src, int dest) {
-        return this.bfs(src, dest);
+        if (this.shortestPathTrees.containsKey(src)) {
+            return this.reconstructPath(src, dest, this.shortestPathTrees.get(src));
+        } else {
+            double dijkstraEst = Math.pow(this.graph.nodeSize(),2);
+            double bfsEst = this.graph.nodeSize() + this.graph.edgeSize();
+            List<INodeData> shortestPath;
+            if (dijkstraEst<bfsEst){
+                 shortestPath = this.dijkstra(src,dest);
+            }else {
+                 shortestPath = this.bfs(src, dest);
+            }
+            return shortestPath;
+        }
     }
 
     private List<INodeData> dijkstra(int src, int dest) {
-        return new ArrayList<>();
+        Double[] dist = new Double[this.graph.nodeSize()];
+        Integer[] prev = new Integer[this.graph.nodeSize()];
+        for (int i = 0; i < this.graph.nodeSize(); ++i) {
+            dist[i] = Double.POSITIVE_INFINITY;
+            prev[i] = null;
+        }
+        dist[src] = 0.0;
+        Comparator<Pair<Integer, Double>> pqComparator = Comparator.comparingDouble(Pair::getRight);
+        Queue<Pair<Integer, Double>> pq = new PriorityQueue<>(pqComparator);
+        pq.offer(Pair.of(src, dist[src]));
+        //white=1, grey=2, black=3
+        this.initNodesTag(1);
+        this.graph.getNode(src).setTag(2);
+        //int countOffersToPQ = 1;
+        while (!pq.isEmpty()) {
+            Pair<Integer, Double> nodeKeyDistPair = pq.poll();
+            INodeData u = this.graph.getNode(nodeKeyDistPair.getKey());
+            for (INodeData v : u.getNi()) {
+                double altDist = dist[u.getKey()] + this.graph.getEdgeLength(u.getKey(), v.getKey());
+                if (altDist < dist[v.getKey()]) {
+                    dist[v.getKey()] = altDist;
+                    prev[v.getKey()] = u.getKey();
+                }
+                if (v.getTag() == 1) {
+                    pq.offer(Pair.of(v.getKey(), dist[v.getKey()]));
+                    //countOffersToPQ++;
+                    v.setTag(2);
+                }
+            }
+            u.setTag(3);
+        }
+        //System.out.println("Offers made to pq: " + countOffersToPQ);
+        this.shortestPathTrees.put(src, prev);
+        this.shortestPathDistTrees.put(src, dist);
+        return this.reconstructPath(src, dest, prev);
     }
 
     private List<INodeData> bfs(int src, int dest) {
         INodeData sourceNode = this.graph.getNode(src);
-        Integer[] prev = new Integer[this.graph.nodeSize() + 1];
+        Integer[] prev = new Integer[this.graph.nodeSize()];
         if (sourceNode == null) {
             return new ArrayList<>();
         }
@@ -122,10 +174,10 @@ public class GraphAlgorithms implements IGraphAlgorithms {
         while (!q.isEmpty()) {
             INodeData currNode = q.poll();
             currNode.setTag(2);
-            if (currNode.getKey() == dest) {
+            /*if (currNode.getKey() == dest) {
                 currNode.setTag(3);
                 break;
-            }
+            }*/
             for (INodeData neighbor : currNode.getNi()) {
                 if (neighbor.getTag() == 1) {
                     q.offer(neighbor);
@@ -135,6 +187,7 @@ public class GraphAlgorithms implements IGraphAlgorithms {
             }
             currNode.setTag(3);
         }
+        this.shortestPathTrees.put(src, prev);
         return reconstructPath(src, dest, prev);
     }
 

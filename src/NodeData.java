@@ -1,5 +1,8 @@
+import org.w3c.dom.Node;
+
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 public class NodeData implements INodeData {
@@ -11,6 +14,10 @@ public class NodeData implements INodeData {
 
     public NodeData() {
         this.key = currentKey++;
+    }
+
+    private NodeData(int key){
+        this.key=key;
     }
 
     @Override
@@ -25,12 +32,7 @@ public class NodeData implements INodeData {
 
     @Override
     public boolean hasNi(int key) {
-        for (INodeData node : this.neighbors) {
-            if (node.getKey() == key) {
-                return true;
-            }
-        }
-        return false;
+        return this.neighbors.contains(new NodeData(key));
     }
 
     @Override
@@ -60,12 +62,12 @@ public class NodeData implements INodeData {
     /**
      * Allows changing the remark (meta data) associated with this node.
      *
-     * @param s
+     * @param info
      */
     @Override
-    public void setInfo(String s) {
-        if (s != null) {
-            this.data = data;
+    public void setInfo(String info) {
+        if (info != null) {
+            this.data = info;
         }
     }
 
@@ -88,11 +90,11 @@ public class NodeData implements INodeData {
      * Allow setting the "tag" value for temporal marking an node - common
      * practice for marking by algorithms.
      *
-     * @param t - the new value of the tag
+     * @param tag - the new value of the tag
      */
     @Override
-    public void setTag(int t) {
-        this.tag = t;
+    public void setTag(int tag) {
+        this.tag = tag;
     }
 
     @Override
@@ -116,5 +118,23 @@ public class NodeData implements INodeData {
             sb.append("}");
         }
         return sb.toString();
+    }
+
+    public static void zeroizeNodeKeyCount(){
+        NodeData.currentKey=0;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        NodeData nodeData = (NodeData) o;
+        return key == nodeData.key &&
+                Objects.equals(neighbors, nodeData.neighbors);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(key);
     }
 }
