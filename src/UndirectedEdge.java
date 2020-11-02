@@ -1,6 +1,9 @@
 import java.util.Objects;
 
 public class UndirectedEdge {
+
+    private UnorderedPair<Integer> edge;
+
     public Integer left() {
         return edge.first();
     }
@@ -8,8 +11,6 @@ public class UndirectedEdge {
     public Integer right() {
         return edge.second();
     }
-
-    private UnorderedPair<Integer> edge;
 
     public UndirectedEdge(Integer vertex1, Integer vertex2) {
         this.edge = new UnorderedPair<>(vertex1, vertex2);

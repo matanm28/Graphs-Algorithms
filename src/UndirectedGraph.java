@@ -1,8 +1,8 @@
 import java.util.*;
 
 public class UndirectedGraph implements IGraph {
-    private Map<Integer, INodeData> vertexMap = new HashMap<>();
-    private Set<INodeData> vertexSet = new HashSet<>();
+    private Map<Integer, INodeData> verticesMap = new HashMap<>();
+    private Set<INodeData> vertices = new HashSet<>();
     private Set<UndirectedEdge> edges = new HashSet<>();
     private String toString = null;
     private int modeCount = 0;
@@ -18,7 +18,7 @@ public class UndirectedGraph implements IGraph {
      */
     @Override
     public INodeData getNode(int key) {
-        return this.vertexMap.get(key);
+        return this.verticesMap.get(key);
     }
 
     /**
@@ -42,12 +42,10 @@ public class UndirectedGraph implements IGraph {
      */
     @Override
     public void addNode(INodeData n) {
-        if (this.vertexSet.contains(n)) {
-            return;
+        if (this.vertices.add(n)){
+            this.modeCount++;
+            this.verticesMap.put(n.getKey(), n);
         }
-        this.modeCount++;
-        this.vertexSet.add(n);
-        this.vertexMap.put(n.getKey(), n);
     }
 
     /**
@@ -60,18 +58,12 @@ public class UndirectedGraph implements IGraph {
      */
     @Override
     public void connect(int node1, int node2) {
-        if (this.hasEdge(node1, node2)) {
-            return;
+        if (!this.hasVertex(node1) || !this.hasVertex(node2)) return;
+        if (this.edges.add(new UndirectedEdge(node1, node2))) {
+            this.modeCount++;
         }
-        INodeData vertex1 = this.getNode(node1);
-        INodeData vertex2 = this.getNode(node2);
-        if (vertex1 == null || vertex2 == null) {
-            return;
-        }
-        this.modeCount++;
-        this.edges.add(new UndirectedEdge(node1, node2));
-        vertex1.addNi(vertex2);
-        vertex2.addNi(vertex1);
+        this.getNode(node1).addNi(this.getNode(node2));
+        this.getNode(node2).addNi(this.getNode(node1));
     }
 
     /**
@@ -83,7 +75,7 @@ public class UndirectedGraph implements IGraph {
      */
     @Override
     public Collection<INodeData> getV() {
-        return this.vertexSet;
+        return this.vertices;
     }
 
     /**
@@ -96,11 +88,11 @@ public class UndirectedGraph implements IGraph {
      */
     @Override
     public Collection<INodeData> getV(int node_id) {
-        INodeData node = this.getNode(node_id);
-        if (node != null) {
-            return node.getNi();
+        Collection<INodeData> ans = new HashSet<>();
+        if (this.hasVertex(node_id)){
+            ans = this.getNode(node_id).getNi();
         }
-        return null;
+        return ans;
     }
 
     /**
@@ -118,8 +110,8 @@ public class UndirectedGraph implements IGraph {
             return null;
         }
         this.modeCount++;
-        this.vertexMap.remove(key);
-        this.vertexSet.remove(node);
+        this.verticesMap.remove(key);
+        this.vertices.remove(node);
         this.removeEdgesOfVertex(key);
         return node;
     }
@@ -128,7 +120,7 @@ public class UndirectedGraph implements IGraph {
         Set<UndirectedEdge> edgesSet = new HashSet<>(this.edges);
         for (UndirectedEdge edge : edgesSet) {
             if (edge.contains(vertex)) {
-                this.removeEdge(edge.left(),edge.right());
+                this.removeEdge(edge.left(), edge.right());
             }
         }
     }
@@ -154,7 +146,7 @@ public class UndirectedGraph implements IGraph {
      */
     @Override
     public int nodeSize() {
-        return this.vertexSet.size();
+        return this.vertices.size();
     }
 
     /**
@@ -194,7 +186,7 @@ public class UndirectedGraph implements IGraph {
     public String stringifyVertexes() {
         StringBuilder sb = new StringBuilder();
         sb.append("V={");
-        for (INodeData v : this.vertexSet) {
+        for (INodeData v : this.vertices) {
             sb.append(String.format("%d, ", v.getKey()));
         }
         sb.deleteCharAt(sb.lastIndexOf(","));
@@ -220,13 +212,13 @@ public class UndirectedGraph implements IGraph {
     }
 
     public String stringifyEdgesAsMatrix() {
-        int[] vertexesNumbers = new int[this.vertexSet.size()];
+        int[] vertexesNumbers = new int[this.vertices.size()];
         int k = 0;
-        for (INodeData v : this.vertexSet) {
+        for (INodeData v : this.vertices) {
             vertexesNumbers[k++] = v.getKey();
         }
         Arrays.sort(vertexesNumbers);
-        String[][] matrix = new String[this.vertexSet.size() + 1][this.vertexSet.size() + 1];
+        String[][] matrix = new String[this.vertices.size() + 1][this.vertices.size() + 1];
         matrix[0][0] = " ";
         for (int i = 1; i < matrix.length; ++i) {
             matrix[0][i] = Integer.toString(vertexesNumbers[i - 1]);
@@ -265,6 +257,10 @@ public class UndirectedGraph implements IGraph {
                     this.stringifyEdges(), this.stringifyEdgesAsMatrix());
         }
         return this.toString;
+    }
+
+    private boolean hasVertex(int key) {
+        return this.getNode(key) != null;
     }
 
 

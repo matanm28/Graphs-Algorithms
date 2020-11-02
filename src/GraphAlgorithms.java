@@ -8,9 +8,14 @@ public class GraphAlgorithms implements IGraphAlgorithms {
     private IGraph graph;
     private Map<Integer, Integer[]> shortestPathTrees;
     private Map<Integer, Double[]> shortestPathDistTrees;
+    private int highestNodeInGraph;
 
     public GraphAlgorithms(IGraph g) {
         this.init(g);
+    }
+
+    public GraphAlgorithms() {
+
     }
 
     /**
@@ -24,6 +29,11 @@ public class GraphAlgorithms implements IGraphAlgorithms {
         this.initNodesTag(1);
         this.shortestPathTrees = new HashMap<>();
         this.shortestPathDistTrees = new HashMap<>();
+        for (INodeData v : this.graph.getV()) {
+            if (v.getKey() > this.highestNodeInGraph) {
+                this.highestNodeInGraph = v.getKey();
+            }
+        }
     }
 
     private void initNodesTag(int state) {
@@ -87,9 +97,9 @@ public class GraphAlgorithms implements IGraphAlgorithms {
         if (this.shortestPathDistTrees.containsKey(src)) {
             dist = this.shortestPathDistTrees.get(src)[dest];
         } else {
-            dist = (double) this.shortestPath(src, dest).size();
+            dist = (double) this.shortestPath(src, dest).size() - 1;
         }
-        return (dist == 0.0 && src != dest) ? -1 : dist.intValue();
+        return (dist <= 0.0 && src != dest) ? -1 : dist.intValue();
 
     }
 
@@ -104,16 +114,19 @@ public class GraphAlgorithms implements IGraphAlgorithms {
      */
     @Override
     public List<INodeData> shortestPath(int src, int dest) {
+        if (this.graph.getNode(src) == null || this.graph.getNode(dest) == null) {
+            return new ArrayList<>();
+        }
         if (this.shortestPathTrees.containsKey(src)) {
             return this.reconstructPath(src, dest, this.shortestPathTrees.get(src));
         } else {
-            double dijkstraEst = Math.pow(this.graph.nodeSize(),2);
+            double dijkstraEst = Math.pow(this.graph.nodeSize(), 2);
             double bfsEst = this.graph.nodeSize() + this.graph.edgeSize();
             List<INodeData> shortestPath;
-            if (dijkstraEst<bfsEst){
-                 shortestPath = this.dijkstra(src,dest);
-            }else {
-                 shortestPath = this.bfs(src, dest);
+            if (dijkstraEst < bfsEst) {
+                shortestPath = this.dijkstra(src, dest);
+            } else {
+                shortestPath = this.bfs(src, dest);
             }
             return shortestPath;
         }
@@ -159,7 +172,7 @@ public class GraphAlgorithms implements IGraphAlgorithms {
 
     private List<INodeData> bfs(int src, int dest) {
         INodeData sourceNode = this.graph.getNode(src);
-        Integer[] prev = new Integer[this.graph.nodeSize()];
+        Integer[] prev = new Integer[this.highestNodeInGraph + 1];
         if (sourceNode == null) {
             return new ArrayList<>();
         }
